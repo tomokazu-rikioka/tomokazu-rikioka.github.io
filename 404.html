@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 — Rick</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/img/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0b0f14">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<div class="scanline"></div>
+
+<main class="term fade">
+  <div class="term__bar">
+    <span class="dot" style="background:#ff5f57"></span>
+    <span class="dot" style="background:#febc2e"></span>
+    <span class="dot" style="background:#28c840"></span>
+    <span class="term__title">rick@tomokazu-rikioka.github.io: ~</span>
+  </div>
+
+  <div class="term__body notfound">
+    <p class="cmd">cd ここにあるはずのページ</p>
+    <div class="block">
+      <h1>404</h1>
+      <p class="role">NOT FOUND</p>
+      <p class="bio">お探しのページは見つかりませんでした。猫がどこかに持っていったのかもしれません。</p>
+      <a class="home" href="/">cd ~ &nbsp;→ &nbsp;トップへ戻る</a>
+    </div>
+    <p class="cmd prompt" aria-hidden="true"><span class="cursor"></span></p>
+  </div>
+</main>
+
+<script src="/assets/js/cat-pixel.js"></script>
+<script>
+  PixelCat.mount({
+    scale: window.matchMedia('(max-width: 560px)').matches ? 4 : 5,
+    ground: 25,
+    speak: 'nya~'
+  });
+</script>
+</body>
+</html>
