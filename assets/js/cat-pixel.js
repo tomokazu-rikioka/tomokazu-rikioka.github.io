@@ -1,81 +1,234 @@
 /* ==========================================================================
-   ドット絵のチャトラ — PixelCat（D案 Data Lab 用）
-   22x14 のドットを canvas に等倍描画して歩かせる小さなエンジン。
-   使い方: PixelCat.mount({ scale: 5, ground: 26 })
+   ドット絵のチャトラ — PixelCat
+   40x24 のドット絵（gen_sprites.py で生成）を canvas に描画して動かす。
+   使い方: PixelCat.mount({ scale: 4, ground: 25 })
+   フレーム: walk x4（歩行サイクル） / sit x2（まばたき） / sleep x2（呼吸）
    ========================================================================== */
 (function (global) {
   'use strict';
 
-  var COLS = 22, ROWS = 14;
+  var COLS = 40, ROWS = 24;
 
   var PALETTE = {
     '.': null,
-    o: '#f2a93b',   // 地の毛
-    d: '#c9761a',   // 縞
-    c: '#fbe7be',   // クリーム（腹・足先）
-    k: '#1c1710',   // 目・輪郭
-    g: '#8cbf3f',   // 瞳
-    p: '#e8897d'    // 鼻
+    'b': '#7c4a12',
+    'o': '#f2a93b',
+    'h': '#f9c168',
+    'f': '#dd9128',
+    'd': '#d8821e',
+    's': '#c96f14',
+    'c': '#fbe7be',
+    'n': '#ecd3a0',
+    'g': '#8cbf3f',
+    'k': '#241a10',
+    'p': '#f0a49a'
+};
+
+  var FRAMES = {
+    walk: [[
+    '...................................b....',
+    '...bb.......................b.....bob...',
+    '..bccb.....................bfb...boob...',
+    '.bcccb....................bffbbbbopoob..',
+    '.bddb......................bbhdhdhbbb...',
+    '.bddob....................bbododoooob...',
+    '..boob......bbbbbbbbbbbbbboooookkoooob..',
+    '..booob...bbhhhhhhhhhhhhhooooooggkooob..',
+    '...bdddb.bhhdoodoodoodoodoooooooooccppb.',
+    '....bddobododoodoodoodooddooooooocccckb.',
+    '.....booodooodoodoodoodooddoooooocccccb.',
+    '......bbodooodoodoodoodoodooooooocccob..',
+    '.......boooodoodoodoodooooccbooooooob...',
+    '.......boooodoodoodoodooooccbboooobb....',
+    '.......boooocccdccdccccccooob.bbbb......',
+    '.......boocccccccccccccccccb............',
+    '........bccoocccccccccccoocb............',
+    '.........bboocccccccccccoob.............',
+    '.........boobbffbbbbffbbboob............',
+    '.........boobbffb..bffb.boob............',
+    '.........boobbffb..bffb.boob............',
+    '........bccb..bccbbccb...bccb...........',
+    '.......bcccb..bccccccb...bcccb..........',
+    '........bbb....bbbbbb.....bbb...........'
+  ], [
+    '...bb.......................b.....bob...',
+    '..bccb.....................bfb...boob...',
+    '.bcccb....................bffbbbbopoob..',
+    '.bddb......................bbhdhdhbbb...',
+    '.bddob....................bbododoooob...',
+    '..boob......bbbbbbbbbbbbbboooookkoooob..',
+    '..booob...bbhhhhhhhhhhhhhooooooggkooob..',
+    '...bdddb.bhhdoodoodoodoodoooooooooccppb.',
+    '....bddobododoodoodoodooddooooooocccckb.',
+    '.....booodooodoodoodoodooddoooooocccccb.',
+    '......bbodooodoodoodoodoodooooooocccob..',
+    '.......boooodoodoodoodooooccbooooooob...',
+    '.......boooodoodoodoodooooccbboooobb....',
+    '.......boooocccdccdccccccooob.bbbb......',
+    '.......boocccccccccccccccccb............',
+    '........bccccccccccccccccccb............',
+    '.........bboocccccccccccoob.............',
+    '..........booffbbbbbbffboob.............',
+    '..........booffb....bffboob.............',
+    '..........booffb....bffboob.............',
+    '..........booccb....bccboob.............',
+    '..........bcccccb...bcccccb.............',
+    '..........bcccbb.....bbbcccb............',
+    '...........bbb..........bbb.............'
+  ], [
+    '...................................b....',
+    '...bb.......................b.....bob...',
+    '..bccb.....................bfb...boob...',
+    '.bcccb....................bffbbbbopoob..',
+    '.bddb......................bbhdhdhbbb...',
+    '.bddob....................bbododoooob...',
+    '..boob......bbbbbbbbbbbbbboooookkoooob..',
+    '..booob...bbhhhhhhhhhhhhhooooooggkooob..',
+    '...bdddb.bhhdoodoodoodoodoooooooooccppb.',
+    '....bddobododoodoodoodooddooooooocccckb.',
+    '.....booodooodoodoodoodooddoooooocccccb.',
+    '......bbodooodoodoodoodoodooooooocccob..',
+    '.......boooodoodoodoodooooccbooooooob...',
+    '.......boooodoodoodoodooooccbboooobb....',
+    '.......boooocccdccdccccccooob.bbbb......',
+    '.......boocccccccccccccccccb............',
+    '........bccoocccccccccccoocb............',
+    '.........bboocccccccccccoob.............',
+    '...........boobbbbbbbbfoob..............',
+    '...........boob......bfoob..............',
+    '...........boob......bfoob..............',
+    '..........bccccb.....bcccb..............',
+    '.........bccccccb...bcccccb.............',
+    '..........bbbbbb.....bbbbb..............'
+  ], [
+    '...bb.......................b.....bob...',
+    '..bccb.....................bfb...boob...',
+    '.bcccb....................bffbbbbopoob..',
+    '.bddb......................bbhdhdhbbb...',
+    '.bddob....................bbododoooob...',
+    '..boob......bbbbbbbbbbbbbboooookkoooob..',
+    '..booob...bbhhhhhhhhhhhhhooooooggkooob..',
+    '...bdddb.bhhdoodoodoodoodoooooooooccppb.',
+    '....bddobododoodoodoodooddooooooocccckb.',
+    '.....booodooodoodoodoodooddoooooocccccb.',
+    '......bbodooodoodoodoodoodooooooocccob..',
+    '.......boooodoodoodoodooooccbooooooob...',
+    '.......boooodoodoodoodooooccbboooobb....',
+    '.......boooocccdccdccccccooob.bbbb......',
+    '.......boocccccccccccccccccb............',
+    '........bccccccccccccccccccb............',
+    '.........bboocccccccccccoob.............',
+    '..........booffbbbbbbffboob.............',
+    '..........booffb....bffboob.............',
+    '..........booffb....bffboob.............',
+    '..........bccffb....bffbccb.............',
+    '..........bccccb....bccbcccb............',
+    '...........bbcccb...bcccbbb.............',
+    '.............bbb.....bbb................'
+  ]],
+    sit: [[
+    '.............bob........bob.............',
+    '............bopbbbbbbbbbopb.............',
+    '............bopoooooooooopob............',
+    '.............booodododoooob.............',
+    '............booododododoooob............',
+    '............boooooooooooooob............',
+    '............bdoogkooookgoodb............',
+    '............bdoogkooookgoodb............',
+    '............booocccppcccooob............',
+    '............booocckcckccooob............',
+    '.............booccccccccoob.............',
+    '..............boccccccccob..............',
+    '...............boooooooob...............',
+    '..............booccccccoob..............',
+    '..............booccccccoob..............',
+    '.............booccccccccoob.............',
+    '.............booccccccccoob.............',
+    '............booocccnncccooob............',
+    '............booccccnnccccoob............',
+    '...........bodoccccnnccccodob...........',
+    '...........boooccccnnccccoooobbb........',
+    '...........boocccccnncccccooodocb.......',
+    '............bocncccnncccncobodoccb......',
+    '.............bbbbbbbbbbbbbb.bbbbb.......'
+  ], [
+    '.............bob........bob.............',
+    '............bopbbbbbbbbbopb.............',
+    '............bopoooooooooopob............',
+    '.............booodododoooob.............',
+    '............booododododoooob............',
+    '............boooooooooooooob............',
+    '............bdoooooooooooodb............',
+    '............bdookkooookkoodb............',
+    '............booocccppcccooob............',
+    '............booocckcckccooob............',
+    '.............booccccccccoob.............',
+    '..............boccccccccob..............',
+    '...............boooooooob...............',
+    '..............booccccccoob..............',
+    '..............booccccccoob..............',
+    '.............booccccccccoob.............',
+    '.............booccccccccoob.............',
+    '............booocccnncccooob............',
+    '............booccccnnccccoob............',
+    '...........bodoccccnnccccodob...........',
+    '...........boooccccnnccccoooobbb........',
+    '...........boocccccnncccccooodocb.......',
+    '............bocncccnncccncobodoccb......',
+    '.............bbbbbbbbbbbbbb.bbbbb.......'
+  ]],
+    sleep: [[
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........b...............................',
+    '.......bob...bbbbbbbbbbbbb..............',
+    '......bopobbbooooooooooooobbb...........',
+    '.......boooooooooodooodooodoobb.........',
+    '......boooooooosoodooodooodoodob........',
+    '.....boooooooooosodooodooodooodob.......',
+    '.....boooooooooosoodooodooodoodoob......',
+    '.....bookkoookkosoodooodooodooooob......',
+    '.....booccppccooooooooooooooooodob......',
+    '.....booccccccooooooooooooooooodob......',
+    '.....booooooooooooooooooooooooooob......',
+    '......booooooooccccccccccccccooob.......',
+    '.......bocccccccccooddoooddoooob........',
+    '........bbocccccooddoooddoooobb.........',
+    '..........bbbocccccccccccobbb...........',
+    '.............bbbbbbbbbbbbb..............'
+  ], [
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........................................',
+    '........b...............................',
+    '.......bob..............................',
+    '......bopobbbbbbbbbbbbbbbbb.............',
+    '.......booooooooooooooooooobbbb.........',
+    '......boooooooosoodooodooodoodob........',
+    '.....boooooooooosodooodooodooodob.......',
+    '.....boooooooooosodooodooodooodoob......',
+    '.....bookkoookkosoodooodooodooooob......',
+    '.....booccppccooooooooooooooooodob......',
+    '.....booccccccooooooooooooooooodob......',
+    '.....booooooooooooooooooooooooooob......',
+    '......booooooooccccccccccccccooob.......',
+    '.......bocccccccccooddoooddoooob........',
+    '........bbocccccooddoooddoooobb.........',
+    '..........bbbocccccccccccobbb...........',
+    '.............bbbbbbbbbbbbb..............'
+  ]]
   };
-
-  /* 胴体〜頭（0〜10 行目）。脚だけ差し替えて歩かせる */
-  var BODY = [
-    '......................',
-    '...............o..o...',
-    'o..............oo.oo..',
-    'oo............oooooooo',
-    '.o............oogoogoo',
-    '.o...........ooooooooo',
-    '.ooooooooooooooocpcooo',
-    '.odoodoodooooooccccooo',
-    '.oooooooooooooooooooo.',
-    '.occcccccccccccooooo..',
-    '..ooooooooooooooooo...'
-  ];
-
-  /* 脚（11〜13 行目）の 4 コマ */
-  var LEGS = [
-    ['..oo...oo....oo..oo...', '..oo...oo....oo..oo...', '..cc...cc....cc..cc...'],
-    ['...oo.oo......oo.oo...', '...oo.oo......oo.oo...', '...cc.cc......cc.cc...'],
-    ['.oo.....oo..oo.....oo.', '.oo.....oo..oo.....oo.', '.cc.....cc..cc.....cc.'],
-    ['...oo.oo......oo.oo...', '...oo.oo......oo.oo...', '...cc.cc......cc.cc...']
-  ];
-
-  /* お座り */
-  var SIT = [
-    '......................',
-    '...............o..o...',
-    'o..............oo.oo..',
-    'oo............oooooooo',
-    '.o............oogoogoo',
-    '.o...........ooooooooo',
-    '.oo.........oooocpcooo',
-    '.ooo........ooooccccoo',
-    '..ooo......ooooooooooo',
-    '..oooooooooooooooooo..',
-    '..occcccccccccccccoo..',
-    '...oooooooooo...oo....',
-    '...cccccccccc...oo....',
-    '................cc....'
-  ];
-
-  /* 丸くなって就寝 */
-  var SLEEP = [
-    '......................',
-    '......................',
-    '..o.o.................',
-    '.ooooo......oooooo....',
-    'ooooooo..ooooooooooo..',
-    'okkookoooooooooooooooo',
-    'opccoooooodoooodoooooo',
-    '.occooooooooooooooooo.',
-    '..oooooooooooooooooo..',
-    '..cccccccccccccccccc..',
-    '...occcccccccccccco...',
-    '....oooooooooooooo....',
-    '......................',
-    '......................'
-  ];
 
   function rand(min, max) { return min + Math.random() * (max - min); }
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
@@ -95,7 +248,7 @@
 
   function mount(options) {
     var opt = Object.assign({
-      host: document.body, scale: 5, ground: 24, speak: 'nya',
+      host: document.body, scale: 4, ground: 24, speak: 'nya',
       idleToSleep: 45000, walkSpeed: 54, runSpeed: 150
     }, options || {});
 
@@ -137,6 +290,7 @@
 
     var state = 'walk', dir = 1, x = 0, target = null;
     var frame = 0, frameTime = 0, raf = null, last = 0, timer = null, bubbleTimer = null;
+    var blinkTime = 0, nextBlink = rand(2.5, 5);
     var minX = 6, maxX = 100;
     var lastActivity = performance.now();
 
@@ -147,9 +301,9 @@
     }
 
     function render() {
-      if (state === 'sleep') { paint(ctx, SLEEP, opt.scale); return; }
-      if (state === 'sit') { paint(ctx, SIT, opt.scale); return; }
-      paint(ctx, BODY.concat(LEGS[frame % LEGS.length]), opt.scale);
+      if (state === 'sleep') { paint(ctx, FRAMES.sleep[frame % 2], opt.scale); return; }
+      if (state === 'sit') { paint(ctx, FRAMES.sit[frame % 2], opt.scale); return; }
+      paint(ctx, FRAMES.walk[frame % 4], opt.scale);
     }
 
     function apply() {
@@ -161,6 +315,8 @@
     function setState(next) {
       if (state === next) return;
       state = next;
+      frame = 0;
+      frameTime = 0;
       wrap.classList.toggle('is-sleep', next === 'sleep');
       render();
     }
@@ -173,7 +329,7 @@
     function decide() {
       if (state === 'sleep') return;
       if (state === 'walk' || state === 'run') {
-        if (Math.random() < 0.45) { setState('sit'); schedule(rand(1.6, 3.2)); }
+        if (Math.random() < 0.45) { setState('sit'); schedule(rand(2, 4.5)); }
         else schedule(rand(3, 6));
       } else {
         if (Math.random() < 0.4) dir = -dir;
@@ -218,15 +374,27 @@
         if (target !== null && ((dir > 0 && x >= target) || (dir < 0 && x <= target))) {
           x = target; target = null;
           setState('sit');
-          schedule(rand(1.4, 2.6));
+          schedule(rand(1.6, 3));
         }
         if (x >= maxX) { x = maxX; dir = -1; }
         else if (x <= minX) { x = minX; dir = 1; }
 
         frameTime += dt;
-        var step = state === 'run' ? 0.085 : 0.15;
+        var step = state === 'run' ? 0.08 : 0.14;
         if (frameTime >= step) { frameTime = 0; frame++; render(); }
         apply();
+      } else if (state === 'sit') {
+        // ときどきまばたき
+        blinkTime += dt;
+        if (frame % 2 === 1 && blinkTime > 0.15) {
+          frame = 0; blinkTime = 0; nextBlink = rand(2.5, 5); render();
+        } else if (frame % 2 === 0 && blinkTime > nextBlink) {
+          frame = 1; blinkTime = 0; render();
+        }
+      } else if (state === 'sleep') {
+        // ゆっくり呼吸
+        frameTime += dt;
+        if (frameTime >= 1.4) { frameTime = 0; frame++; render(); }
       }
 
       if (state !== 'sleep' && now - lastActivity > opt.idleToSleep) {
@@ -287,5 +455,5 @@
     };
   }
 
-  global.PixelCat = { mount: mount, COLS: COLS, ROWS: ROWS };
+  global.PixelCat = { mount: mount, FRAMES: FRAMES, PALETTE: PALETTE, COLS: COLS, ROWS: ROWS };
 })(window);
