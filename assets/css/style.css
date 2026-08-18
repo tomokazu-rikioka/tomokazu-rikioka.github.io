@@ -179,7 +179,7 @@ h1 {
 }
 .pixcat__bubble {
   position: absolute;
-  left: 50%; bottom: 100%;
+  left: 50%; bottom: var(--cat-top, 100%);
   transform: translateX(-50%) translateY(4px);
   margin-bottom: 6px;
   padding: 2px 8px;
@@ -197,7 +197,7 @@ h1 {
 .pixcat.is-sleep::after {
   content: 'z z z';
   position: absolute;
-  left: 60%; bottom: 96%;
+  left: 60%; bottom: calc(var(--cat-top, 96%) + 2px);
   color: var(--amber);
   font-size: 11px;
   letter-spacing: 2px;

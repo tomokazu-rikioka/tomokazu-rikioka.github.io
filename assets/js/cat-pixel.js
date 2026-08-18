@@ -1,234 +1,34 @@
 /* ==========================================================================
    ドット絵のチャトラ — PixelCat
-   40x24 のドット絵（gen_sprites.py で生成）を canvas に描画して動かす。
-   使い方: PixelCat.mount({ scale: 4, ground: 25 })
+   スプライトは assets/js/cat-sprites.js（tools/build_cat_sprites.py が
+   参照イラストから量子化して生成、88x56）を canvas に描画して動かす。
+   使い方: PixelCat.mount({ scale: 3, ground: 25 })
    フレーム: walk x4（歩行サイクル） / sit x2（まばたき） / sleep x2（呼吸）
    ========================================================================== */
 (function (global) {
   'use strict';
 
-  var COLS = 40, ROWS = 24;
+  var DATA = global.PIXCAT_DATA;
+  if (!DATA) return;
 
-  var PALETTE = {
-    '.': null,
-    'b': '#7c4a12',
-    'o': '#f2a93b',
-    'h': '#f9c168',
-    'f': '#dd9128',
-    'd': '#d8821e',
-    's': '#c96f14',
-    'c': '#fbe7be',
-    'n': '#ecd3a0',
-    'g': '#8cbf3f',
-    'k': '#241a10',
-    'p': '#f0a49a'
-};
+  var COLS = DATA.cols, ROWS = DATA.rows;
+  var PALETTE = DATA.palette;
+  var FRAMES = DATA.frames;
 
-  var FRAMES = {
-    walk: [[
-    '...................................b....',
-    '...bb.......................b.....bob...',
-    '..bccb.....................bfb...boob...',
-    '.bcccb....................bffbbbbopoob..',
-    '.bddb......................bbhdhdhbbb...',
-    '.bddob....................bbododoooob...',
-    '..boob......bbbbbbbbbbbbbboooookkoooob..',
-    '..booob...bbhhhhhhhhhhhhhooooooggkooob..',
-    '...bdddb.bhhdoodoodoodoodoooooooooccppb.',
-    '....bddobododoodoodoodooddooooooocccckb.',
-    '.....booodooodoodoodoodooddoooooocccccb.',
-    '......bbodooodoodoodoodoodooooooocccob..',
-    '.......boooodoodoodoodooooccbooooooob...',
-    '.......boooodoodoodoodooooccbboooobb....',
-    '.......boooocccdccdccccccooob.bbbb......',
-    '.......boocccccccccccccccccb............',
-    '........bccoocccccccccccoocb............',
-    '.........bboocccccccccccoob.............',
-    '.........boobbffbbbbffbbboob............',
-    '.........boobbffb..bffb.boob............',
-    '.........boobbffb..bffb.boob............',
-    '........bccb..bccbbccb...bccb...........',
-    '.......bcccb..bccccccb...bcccb..........',
-    '........bbb....bbbbbb.....bbb...........'
-  ], [
-    '...bb.......................b.....bob...',
-    '..bccb.....................bfb...boob...',
-    '.bcccb....................bffbbbbopoob..',
-    '.bddb......................bbhdhdhbbb...',
-    '.bddob....................bbododoooob...',
-    '..boob......bbbbbbbbbbbbbboooookkoooob..',
-    '..booob...bbhhhhhhhhhhhhhooooooggkooob..',
-    '...bdddb.bhhdoodoodoodoodoooooooooccppb.',
-    '....bddobododoodoodoodooddooooooocccckb.',
-    '.....booodooodoodoodoodooddoooooocccccb.',
-    '......bbodooodoodoodoodoodooooooocccob..',
-    '.......boooodoodoodoodooooccbooooooob...',
-    '.......boooodoodoodoodooooccbboooobb....',
-    '.......boooocccdccdccccccooob.bbbb......',
-    '.......boocccccccccccccccccb............',
-    '........bccccccccccccccccccb............',
-    '.........bboocccccccccccoob.............',
-    '..........booffbbbbbbffboob.............',
-    '..........booffb....bffboob.............',
-    '..........booffb....bffboob.............',
-    '..........booccb....bccboob.............',
-    '..........bcccccb...bcccccb.............',
-    '..........bcccbb.....bbbcccb............',
-    '...........bbb..........bbb.............'
-  ], [
-    '...................................b....',
-    '...bb.......................b.....bob...',
-    '..bccb.....................bfb...boob...',
-    '.bcccb....................bffbbbbopoob..',
-    '.bddb......................bbhdhdhbbb...',
-    '.bddob....................bbododoooob...',
-    '..boob......bbbbbbbbbbbbbboooookkoooob..',
-    '..booob...bbhhhhhhhhhhhhhooooooggkooob..',
-    '...bdddb.bhhdoodoodoodoodoooooooooccppb.',
-    '....bddobododoodoodoodooddooooooocccckb.',
-    '.....booodooodoodoodoodooddoooooocccccb.',
-    '......bbodooodoodoodoodoodooooooocccob..',
-    '.......boooodoodoodoodooooccbooooooob...',
-    '.......boooodoodoodoodooooccbboooobb....',
-    '.......boooocccdccdccccccooob.bbbb......',
-    '.......boocccccccccccccccccb............',
-    '........bccoocccccccccccoocb............',
-    '.........bboocccccccccccoob.............',
-    '...........boobbbbbbbbfoob..............',
-    '...........boob......bfoob..............',
-    '...........boob......bfoob..............',
-    '..........bccccb.....bcccb..............',
-    '.........bccccccb...bcccccb.............',
-    '..........bbbbbb.....bbbbb..............'
-  ], [
-    '...bb.......................b.....bob...',
-    '..bccb.....................bfb...boob...',
-    '.bcccb....................bffbbbbopoob..',
-    '.bddb......................bbhdhdhbbb...',
-    '.bddob....................bbododoooob...',
-    '..boob......bbbbbbbbbbbbbboooookkoooob..',
-    '..booob...bbhhhhhhhhhhhhhooooooggkooob..',
-    '...bdddb.bhhdoodoodoodoodoooooooooccppb.',
-    '....bddobododoodoodoodooddooooooocccckb.',
-    '.....booodooodoodoodoodooddoooooocccccb.',
-    '......bbodooodoodoodoodoodooooooocccob..',
-    '.......boooodoodoodoodooooccbooooooob...',
-    '.......boooodoodoodoodooooccbboooobb....',
-    '.......boooocccdccdccccccooob.bbbb......',
-    '.......boocccccccccccccccccb............',
-    '........bccccccccccccccccccb............',
-    '.........bboocccccccccccoob.............',
-    '..........booffbbbbbbffboob.............',
-    '..........booffb....bffboob.............',
-    '..........booffb....bffboob.............',
-    '..........bccffb....bffbccb.............',
-    '..........bccccb....bccbcccb............',
-    '...........bbcccb...bcccbbb.............',
-    '.............bbb.....bbb................'
-  ]],
-    sit: [[
-    '.............bob........bob.............',
-    '............bopbbbbbbbbbopb.............',
-    '............bopoooooooooopob............',
-    '.............booodododoooob.............',
-    '............booododododoooob............',
-    '............boooooooooooooob............',
-    '............bdoogkooookgoodb............',
-    '............bdoogkooookgoodb............',
-    '............booocccppcccooob............',
-    '............booocckcckccooob............',
-    '.............booccccccccoob.............',
-    '..............boccccccccob..............',
-    '...............boooooooob...............',
-    '..............booccccccoob..............',
-    '..............booccccccoob..............',
-    '.............booccccccccoob.............',
-    '.............booccccccccoob.............',
-    '............booocccnncccooob............',
-    '............booccccnnccccoob............',
-    '...........bodoccccnnccccodob...........',
-    '...........boooccccnnccccoooobbb........',
-    '...........boocccccnncccccooodocb.......',
-    '............bocncccnncccncobodoccb......',
-    '.............bbbbbbbbbbbbbb.bbbbb.......'
-  ], [
-    '.............bob........bob.............',
-    '............bopbbbbbbbbbopb.............',
-    '............bopoooooooooopob............',
-    '.............booodododoooob.............',
-    '............booododododoooob............',
-    '............boooooooooooooob............',
-    '............bdoooooooooooodb............',
-    '............bdookkooookkoodb............',
-    '............booocccppcccooob............',
-    '............booocckcckccooob............',
-    '.............booccccccccoob.............',
-    '..............boccccccccob..............',
-    '...............boooooooob...............',
-    '..............booccccccoob..............',
-    '..............booccccccoob..............',
-    '.............booccccccccoob.............',
-    '.............booccccccccoob.............',
-    '............booocccnncccooob............',
-    '............booccccnnccccoob............',
-    '...........bodoccccnnccccodob...........',
-    '...........boooccccnnccccoooobbb........',
-    '...........boocccccnncccccooodocb.......',
-    '............bocncccnncccncobodoccb......',
-    '.............bbbbbbbbbbbbbb.bbbbb.......'
-  ]],
-    sleep: [[
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........b...............................',
-    '.......bob...bbbbbbbbbbbbb..............',
-    '......bopobbbooooooooooooobbb...........',
-    '.......boooooooooodooodooodoobb.........',
-    '......boooooooosoodooodooodoodob........',
-    '.....boooooooooosodooodooodooodob.......',
-    '.....boooooooooosoodooodooodoodoob......',
-    '.....bookkoookkosoodooodooodooooob......',
-    '.....booccppccooooooooooooooooodob......',
-    '.....booccccccooooooooooooooooodob......',
-    '.....booooooooooooooooooooooooooob......',
-    '......booooooooccccccccccccccooob.......',
-    '.......bocccccccccooddoooddoooob........',
-    '........bbocccccooddoooddoooobb.........',
-    '..........bbbocccccccccccobbb...........',
-    '.............bbbbbbbbbbbbb..............'
-  ], [
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........................................',
-    '........b...............................',
-    '.......bob..............................',
-    '......bopobbbbbbbbbbbbbbbbb.............',
-    '.......booooooooooooooooooobbbb.........',
-    '......boooooooosoodooodooodoodob........',
-    '.....boooooooooosodooodooodooodob.......',
-    '.....boooooooooosodooodooodooodoob......',
-    '.....bookkoookkosoodooodooodooooob......',
-    '.....booccppccooooooooooooooooodob......',
-    '.....booccccccooooooooooooooooodob......',
-    '.....booooooooooooooooooooooooooob......',
-    '......booooooooccccccccccccccooob.......',
-    '.......bocccccccccooddoooddoooob........',
-    '........bbocccccooddoooddoooobb.........',
-    '..........bbbocccccccccccobbb...........',
-    '.............bbbbbbbbbbbbb..............'
-  ]]
-  };
+  // 状態ごとのコンテンツ最上行（吹き出し・zzz の位置合わせに使う）
+  var TOP_ROW = {};
+  Object.keys(FRAMES).forEach(function (state) {
+    var top = ROWS;
+    FRAMES[state].forEach(function (frame) {
+      for (var y = 0; y < frame.length; y++) {
+        if (/[^.]/.test(frame[y])) {
+          if (y < top) top = y;
+          break;
+        }
+      }
+    });
+    TOP_ROW[state] = top;
+  });
 
   function rand(min, max) { return min + Math.random() * (max - min); }
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
@@ -248,8 +48,8 @@
 
   function mount(options) {
     var opt = Object.assign({
-      host: document.body, scale: 4, ground: 24, speak: 'nya',
-      idleToSleep: 45000, walkSpeed: 54, runSpeed: 150
+      host: document.body, scale: 3, ground: 25, speak: 'nya',
+      idleToSleep: 45000, walkSpeed: 62, runSpeed: 170
     }, options || {});
 
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -318,6 +118,10 @@
       frame = 0;
       frameTime = 0;
       wrap.classList.toggle('is-sleep', next === 'sleep');
+      // 猫の頭の高さに吹き出し・zzz を合わせる
+      var key = next === 'run' ? 'walk' : next;
+      var topRow = TOP_ROW[key] != null ? TOP_ROW[key] : 0;
+      wrap.style.setProperty('--cat-top', ((ROWS - topRow) * opt.scale) + 'px');
       render();
     }
 
@@ -435,6 +239,7 @@
 
     measure();
     x = rand(minX + 40, Math.max(minX + 41, maxX * 0.55));
+    wrap.style.setProperty('--cat-top', ((ROWS - TOP_ROW.walk) * opt.scale) + 'px');
     apply();
     render();
 

@@ -16,7 +16,7 @@
 <meta property="og:locale" content="ja_JP">
 <meta property="og:site_name" content="Rick — Data Scientist">
 <meta property="og:title" content="Rick — Data Scientist">
-<meta property="og:description" content="データサイエンティストです。猫が好きです！ Kaggle / LLM / ロボット学習">
+<meta property="og:description" content="データサイエンティストです。猫が好きです！">
 <meta property="og:url" content="https://tomokazu-rikioka.github.io/">
 <meta property="og:image" content="https://tomokazu-rikioka.github.io/assets/img/og.png">
 <meta property="og:image:width" content="1200">
@@ -69,7 +69,7 @@
       <div>
         <h1>Rick</h1>
         <p class="role">DATA SCIENTIST</p>
-        <p class="bio">データサイエンティストです。猫が好きです！ Kaggle / LLM / ロボット学習</p>
+        <p class="bio">データサイエンティストです。猫が好きです！</p>
       </div>
     </div>
 
@@ -123,11 +123,12 @@
   </div>
 </main>
 
+<script src="assets/js/cat-sprites.js"></script>
 <script src="assets/js/cat-pixel.js"></script>
 <script src="assets/js/visitors.js"></script>
 <script>
-  PixelCat.mount({
-    scale: window.matchMedia('(max-width: 560px)').matches ? 3 : 4,
+  window.__cat = PixelCat.mount({
+    scale: window.matchMedia('(max-width: 560px)').matches ? 2 : 3,
     ground: 25,
     speak: 'nya~'
   });

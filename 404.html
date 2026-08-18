@@ -36,10 +36,11 @@
   </div>
 </main>
 
+<script src="/assets/js/cat-sprites.js"></script>
 <script src="/assets/js/cat-pixel.js"></script>
 <script>
   PixelCat.mount({
-    scale: window.matchMedia('(max-width: 560px)').matches ? 3 : 4,
+    scale: window.matchMedia('(max-width: 560px)').matches ? 2 : 3,
     ground: 25,
     speak: 'nya~'
   });
